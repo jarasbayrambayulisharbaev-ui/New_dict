@@ -2,11 +2,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- Fayl nomlari (.csv formatida) ---
     const DICTIONARY_FILES = {
-        'main-dictionary': 'dictionary.csv',
-        'proverbs-dictionary': 'proverbs.csv',
-        'names-dictionary': 'names.csv',
-        'phraseology-dictionary': 'phraseology.csv',
-        'orphography-dictionary': 'orphography.csv'
+        'main-dictionary': 'data/dictionary.csv',
+        'proverbs-dictionary': 'data/proverbs.csv',
+        'names-dictionary': 'data/names.csv',
+        'phraseology-dictionary': 'data/phraseology.csv',
+        'orphography-dictionary': 'data/orphography.csv'
     };
     
     // Qaraqalpaq Kirill alifbosi
@@ -369,4 +369,5 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+
 });
