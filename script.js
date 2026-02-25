@@ -1,22 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
     
-    // --- Fayl nomlari (XML formatiga o'zgartirildi) ---
+    // --- Fayl nomlari (data/ papkasida joylashgan) ---
     const DICTIONARY_FILES = {
-        'main-dictionary': 'data/dictionary.xml', // CSV o'rniga XML
-        'proverbs-dictionary': 'data/proverbs.xml',
-        'names-dictionary': 'data/names.xml',
-        'phraseology-dictionary': 'data/phraseology.xml',
-        'orphography-dictionary': 'data/orthography.xml'
+        'main-dictionary': 'data/dictionary.csv',
+        'proverbs-dictionary': 'data/proverbs.csv',
+        'names-dictionary': 'data/names.csv',
+        'phraseology-dictionary': 'data/phraseology.csv',
+        'orphography-dictionary': 'data/orphography.csv' // Eger fayl atı orthography bolsa, solay ózgertiń
     };
     
-    // Qaraqalpaq kirill álipbesi (Siz bergan ma'lumotlar kirillda edi)
+    // Qaraqalpaq latın álipbesi
     function getCyrillicAlphabet() {
-        return ['А', 'Ә', 'Б', 'В', 'Г', 'Ғ', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Қ', 'Л', 'M', 'Н', 'Ң', 'О', 'Ө', 'П', 'Р', 'С', 'Т', 'У', 'Ў', 'Ф', 'Х', 'Ҳ', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я'];
+        return ['А', 'Á', 'B', 'D', 'E', 'F', 'G', 'Ǵ', 'J', 'Z', 'Í', 'I', 'K', 'Q', 'L', 'M', 'N', 'Ń', 'O', 'Ó', 'P', 'R', 'S', 'T', 'U', 'Ú', 'F', 'X', 'H', 'C', 'Ch', 'Sh'];
     }
 
+    // Lug'at ma'lumotlarini saqlash uchun ob'ekt
     const dictionaries = {};
 
-    // Elementlarni tayyorlash
+    // Elementlarga murojaatni tayyorlash
     Object.keys(DICTIONARY_FILES).forEach(key => {
         const isMain = key === 'main-dictionary';
         const inputId = isMain ? 'searchInput' : key.replace('-dictionary', 'SearchInput');
@@ -26,70 +27,130 @@ document.addEventListener('DOMContentLoaded', () => {
         
         dictionaries[key] = {
             file: DICTIONARY_FILES[key],
-            data: [], // XML struktura uchun massiv qulayroq
+            data: {},
             input: document.getElementById(inputId),
             button: document.getElementById(buttonId),
             results: document.getElementById(resultsId),
             indexList: document.getElementById(indexListId),
             alphabet: getCyrillicAlphabet(),
+            placeholder: document.querySelector(`#${key} .search-area-wrapper p`) ? document.querySelector(`#${key} .search-area-wrapper p`).textContent : 'Izlew...',
             searchOptions: document.querySelectorAll(`input[name="search-type-${key.replace('-dictionary', '')}"]`)
         };
     });
 
-    // --- XML tahlil qilish (Yangi funksiya) ---
-    function parseXMLDictionary(xmlText) {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-        const entries = xmlDoc.getElementsByTagName("entry");
-        const data = [];
-
-        for (let entry of entries) {
-            const word = entry.getAttribute("word");
-            const senses = [];
-            
-            // Har bir ma'noni (sense) o'qish
-            const senseElements = entry.getElementsByTagName("sense");
-            if (senseElements.length > 0) {
-                for (let s of senseElements) {
-                    senses.push({
-                        def: s.getElementsByTagName("definition")[0]?.textContent || "",
-                        ex: s.getElementsByTagName("example")[0]?.textContent || "",
-                        exQuote: s.getElementsByTagName("example")[0]?.getAttribute("quote") || "",
-                        source: s.getElementsByTagName("source")[0]?.textContent || ""
-                    });
-                }
-            } else {
-                // Agar sense bo'lmasa, to'g'ridan-to'g'ri definition'ni oqish
-                senses.push({
-                    def: entry.getElementsByTagName("definition")[0]?.textContent || "",
-                    ex: "", source: ""
-                });
-            }
-
-            data.push({ word, senses, type: entry.getElementsByTagName("type")[0]?.textContent || "" });
+    const navLinks = document.querySelectorAll('nav .nav-link');
+    const dictionarySections = document.querySelectorAll('.dictionary-section, .info-section');
+    
+    // --- CSV tahlil qilish funksiyasi ---
+    function parseProtectedLine(line) {
+        const fields = []; let currentField = ''; let inQuotes = false; const len = line.length;
+        for (let i = 0; i < len; i++) {
+            const char = line[i]; const nextChar = (i < len - 1) ? line[i + 1] : null;
+            if (char === '"') {
+                if (inQuotes && nextChar === '"') { currentField += '"'; i++; } else { inQuotes = !inQuotes; }
+            } else if (char === ',' && !inQuotes) { fields.push(currentField.trim()); currentField = ''; } 
+            else { currentField += char; }
         }
-        return data;
+        fields.push(currentField.trim());
+        if (fields.length >= 2) {
+            return { word: fields[0], definition: fields.slice(1).join(',').trim() };
+        } else if (fields.length === 1 && fields[0]) {
+            return { word: fields[0], definition: '' };
+        }
+        return null;
     }
 
-    // --- Natijani ekranga chiqarish ---
-    function formatEntryHTML(entry) {
-        let html = `<div class="entry-card">
-            <h3 class="entry-word">${entry.word} <small>${entry.type}</small></h3>`;
+    // --- Index List ushın element jaratıw ---
+    function createIndexListItem(dictKey, word, definition) {
+        const listItem = document.createElement('li');
+        let displayWord = word.charAt(0).toUpperCase() + word.slice(1);
         
-        entry.senses.forEach((s, index) => {
-            html += `<div class="sense-item">
-                <p><strong>${entry.senses.length > 1 ? (index + 1) + '. ' : ''}</strong>${s.def}</p>`;
-            if (s.exQuote) {
-                html += `<i class="example-text">"${s.exQuote}"</i>`;
+        if (dictKey === 'proverbs-dictionary' || dictKey === 'phraseology-dictionary') {
+             displayWord = displayWord.replace(/\\n/g, '<br>');
+        }
+        
+        listItem.innerHTML = displayWord;
+        
+        listItem.addEventListener('click', () => {
+            const dict = dictionaries[dictKey];
+            const activeItems = dict.indexList.querySelectorAll('li.selected');
+            activeItems.forEach(item => item.classList.remove('selected'));
+            listItem.classList.add('selected');
+            
+            let resultDefinition = definition;
+            if (dictKey === 'proverbs-dictionary' || dictKey === 'phraseology-dictionary') {
+                 resultDefinition = resultDefinition.replace(/\\n/g, '<br>');
             }
-            if (s.source) {
-                html += `<span class="source-tag"> — ${s.source}</span>`;
+            
+            const definitionHtml = resultDefinition ? `<span class="definition-text">: ${resultDefinition}</span>` : '';
+
+            if (dict.results) { 
+                dict.results.innerHTML = `<div class="index-word-result"><strong>${word}</strong>${definitionHtml}</div>`;
+                dict.results.scrollIntoView({ behavior: 'smooth' });
             }
-            html += `</div>`;
+            if (dict.input) dict.input.value = ''; 
+        });
+        return listItem;
+    }
+    
+    // --- Index ro'yxatini yaratish ---
+    function buildIndexList(dictKey) {
+        const dict = dictionaries[dictKey];
+        if (!dict || !dict.indexList || Object.keys(dict.data).length === 0) return; 
+        
+        dict.indexList.classList.remove('loading-state');
+        const words = Object.keys(dict.data).sort((a, b) => a.localeCompare(b, 'kar', { sensitivity: 'base' }));
+        dict.indexList.innerHTML = ''; 
+
+        const alphaContainer = document.createElement('div');
+        alphaContainer.classList.add('alpha-filter');
+        dict.indexList.appendChild(alphaContainer);
+        
+        const listContainer = document.createElement('ul');
+        dict.indexList.appendChild(listContainer);
+
+        const groups = {};
+        words.forEach(word => {
+            let groupLetter = dict.alphabet.find(l => word.toUpperCase().startsWith(l.toUpperCase()));
+            if (groupLetter) {
+                if (!groups[groupLetter]) { groups[groupLetter] = []; }
+                groups[groupLetter].push(word);
+            }
         });
         
-        html += `</div>`;
-        return html;
+        const showWordsByLetter = (letter) => {
+            listContainer.innerHTML = '';
+            const wordsToShow = groups[letter];
+            if (wordsToShow) {
+                wordsToShow.forEach(word => {
+                    listContainer.appendChild(createIndexListItem(dictKey, word, dict.data[word]));
+                });
+            } else {
+                listContainer.innerHTML = '<p style="text-align:center; color:#e74c3c;">Bul háripke tiyisli sóz tabılmadı.</p>';
+            }
+        };
+
+        dict.alphabet.forEach(letter => {
+            if (groups[letter] && groups[letter].length > 0) {
+                const button = document.createElement('button');
+                button.textContent = letter;
+                button.addEventListener('click', () => {
+                    alphaContainer.querySelectorAll('.active').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    showWordsByLetter(letter);
+                });
+                alphaContainer.appendChild(button);
+            }
+        });
+        
+        const firstAvailableLetter = dict.alphabet.find(letter => groups[letter] && groups[letter].length > 0);
+        if (firstAvailableLetter) {
+            const firstButton = Array.from(alphaContainer.querySelectorAll('button')).find(btn => btn.textContent === firstAvailableLetter);
+            if (firstButton) {
+                firstButton.classList.add('active');
+                showWordsByLetter(firstAvailableLetter); 
+            }
+        }
     }
 
     // --- Lug'at faylini yuklash ---
@@ -97,64 +158,85 @@ document.addEventListener('DOMContentLoaded', () => {
         const dict = dictionaries[dictKey];
         if (!dict || !dict.input) return;
 
+        dict.input.disabled = true;
+        dict.results.innerHTML = '<p class="initial-message">Sózlik júklenbekte...</p>';
+        dict.indexList.innerHTML = '<div class="loader-placeholder">Júklenbekte...</div>'; 
+
         fetch(dict.file)
-            .then(response => response.text())
-            .then(xmlText => {
-                dict.data = parseXMLDictionary(xmlText);
-                buildIndexList(dictKey);
-            })
-            .catch(error => console.error("XML yuklashda xato:", error));
+             .then(response => {
+                 if (!response.ok) throw new Error(`Fayl ${dict.file} tabılmadı.`); 
+                 return response.text();
+             })
+             .then(text => {
+                 const lines = text.split('\n').filter(line => line.trim() !== '');
+                 dict.data = {}; 
+                 lines.forEach(line => {
+                     const parsed = parseProtectedLine(line);
+                     if (parsed) { dict.data[parsed.word.toLowerCase()] = parsed.definition; }
+                 });
+
+                 dict.input.disabled = false;
+                 if(dict.button) dict.button.disabled = false;
+
+                 if (Object.keys(dict.data).length > 0) {
+                     dict.results.innerHTML = `<p class="initial-message">Sózlik júklendi. ${Object.keys(dict.data).length} sóz bar.</p>`;
+                     buildIndexList(dictKey); 
+                 }
+             })
+             .catch(error => {
+                 console.error(`❌ JÚKLEW QÁTESI:`, error);
+                 dict.results.innerHTML = `<p class="no-results-message" style="color:red;">❌ Qáte: ${error.message}</p>`;
+             });
     }
 
-    // --- Qidiruv funksiyasi (XML ma'lumotlariga moslandi) ---
+    // --- Qidiruv funksiyasi ---
     function performSearch(dictKey) {
         const dict = dictionaries[dictKey];
-        const searchTerm = dict.input.value.toLowerCase().trim();
-        if (!searchTerm) return;
+        if (!dict || !dict.input.value.trim()) return;
 
-        const results = dict.data.filter(item => item.word.toLowerCase().includes(searchTerm));
-        
-        dict.results.innerHTML = "";
-        if (results.length > 0) {
-            results.forEach(entry => {
-                const div = document.createElement('div');
-                div.innerHTML = formatEntryHTML(entry);
-                dict.results.appendChild(div);
+        const searchTerm = dict.input.value.toLowerCase().trim();
+        const searchType = dict.searchOptions ? Array.from(dict.searchOptions).find(radio => radio.checked).value : 'includes';
+        const matchingWords = Object.keys(dict.data).filter(word => 
+            searchType === 'startswith' ? word.startsWith(searchTerm) : word.includes(searchTerm)
+        ).sort();
+
+        dict.results.innerHTML = '';
+        if (matchingWords.length > 0) {
+            matchingWords.forEach(word => {
+                const resultElement = document.createElement('p');
+                resultElement.innerHTML = `<strong>${word}</strong>: ${dict.data[word]}`;
+                dict.results.appendChild(resultElement);
             });
         } else {
-            dict.results.innerHTML = '<p>Sóz tabılmadı.</p>';
+            dict.results.innerHTML = '<p class="no-results-message">Heshqanday sóz tabılmadı.</p>';
         }
     }
 
-    // --- Index List (Alifbo bo'yicha saralash) ---
-    function buildIndexList(dictKey) {
-        const dict = dictionaries[dictKey];
-        if (!dict.indexList || dict.data.length === 0) return;
-
-        const listContainer = document.createElement('ul');
-        dict.indexList.innerHTML = '';
-        
-        // Alifbo tugmachalarini yasash... (oldingi kodingizdagi buildIndexList mantiqi qoladi, 
-        // faqat dict.data endi obyekt emas, massiv ekanini hisobga oling)
-        const sortedData = [...dict.data].sort((a, b) => a.word.localeCompare(b.word, 'kk'));
-        
-        sortedData.forEach(entry => {
-            const li = document.createElement('li');
-            li.textContent = entry.word;
-            li.addEventListener('click', () => {
-                dict.results.innerHTML = formatEntryHTML(entry);
-                dict.results.scrollIntoView({ behavior: 'smooth' });
-            });
-            listContainer.appendChild(li);
+    // --- Navigatsiya ---
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = e.currentTarget.dataset.target;
+            document.querySelectorAll('nav a').forEach(nav => nav.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            
+            dictionarySections.forEach(section => section.classList.add('hidden-section'));
+            const targetElement = document.getElementById(targetId);
+            if(targetElement) {
+                targetElement.classList.remove('hidden-section');
+                if (dictionaries[targetId] && dictionaries[targetId].input) {
+                    dictionaries[targetId].input.value = '';
+                    // ReferenceError durıslandı (dictionaries)
+                    dictionaries[targetId].results.innerHTML = '<p class="initial-message">Izlew nátiyjeleri bul jerde kórinedi.</p>';
+                }
+            }
         });
-        dict.indexList.appendChild(listContainer);
-    }
+    });
 
-    // Ishga tushirish
-    Object.keys(dictionaries).forEach(key => {
-        loadDictionary(key);
-        const dict = dictionaries[key];
-        if (dict.button) dict.button.addEventListener('click', () => performSearch(key));
-        if (dict.input) dict.input.addEventListener('keypress', (e) => { if(e.key === 'Enter') performSearch(key) });
+    Object.keys(dictionaries).forEach(loadDictionary); 
+    Object.keys(dictionaries).forEach(dictKey => {
+        const dict = dictionaries[dictKey];
+        if (dict.input) dict.input.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(dictKey); });
+        if (dict.button) dict.button.addEventListener('click', () => performSearch(dictKey));
     });
 });
