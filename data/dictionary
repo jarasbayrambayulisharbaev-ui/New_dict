@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dictionary language="karakalpak">
+    <entry word="А">
+        <sense id="1">
+            <definition>Қарақалпақ әлипбесиниң биринши ҳәриби.</definition>
+            <example quote="«А» десең аяғын, «Т» десең таяғын көтереди">кқ.х.н.</example>
+        </sense>
+        <sense id="2" type="linguistics">
+            <definition>Қарақалпақ тилинде ашық, жуўан даўыслы езиўлик сес.</definition>
+            <source>Ҳәзирги қарақалпақ тили. Фонетика</source>
+        </sense>
+        <sense id="3" type="conjunction">
+            <definition>Дәнекер (Bog'lovchi).</definition>
+            <example quote="Сапаров мен боламан, а мынаў — жолдас Федотов">Ш.Сейтов</example>
+        </sense>
+        <sense id="5" type="interjection">
+            <definition>«Әй!», «Ҳәй!» сөзлерине мәнилес, биреўдиң нәзерин аўдарыў ушын айтылатуғын сес.</definition>
+            <example quote="А, патшайым, патшайым, Кетти мениң талайым">Қарақалпақ фольклоры</example>
+        </sense>
+    </entry>
+
+    <entry word="А дегенде">
+        <definition>Дäслеп, әўел.</definition>
+        <example quote="А дегенде аяғын көтереди">Қарақалпақ фольклоры</example>
+    </entry>
+
+    <entry word="АБАДАН">
+        <type>kel.</type>
+        <definition>Жеткиликли, мол, көп, қурғын, баршылық.</definition>
+        <example quote="Дүнья тыныш, еллер абадан болсын">И.Юсупов</example>
+    </entry>
+
+    <entry word="АБАЙЛАМАЙ">
+        <type>r.</type>
+        <definition>Сезбей, серлемей, билмей.</definition>
+        <example quote="Оксананың қайсы есикке кирип кеткенин абайламай да қалдым">М.Нызанов</example>
+    </entry>
+
+    <entry word="АБАЖУР">
+        <type>at.</type>
+        <definition>Лампаның үстине орнатылған (гезлеме, қағаz т. б.) қаплама, шыра қалпақ.</definition>
+    </entry>
+
+    <entry word="АБОРТ">
+        <type>at.</type>
+        <definition>Баланы ўақтынан бурын операция жолы менен алып таслаў усылы.</definition>
+    </entry>
+
+    <entry word="АВТОНОМИЯ">
+        <type>at.</type>
+        <definition>Белгили бир халықтың өзин өзи басқарыў ҳуқықы, миллий ҳуқықы.</definition>
+    </entry>
+
+    <entry word="АГИТАТОР">
+        <type>at.</type>
+        <definition>Көпшилик арасында үгит-нәсият жумысын жүргизиўши адам.</definition>
+        <example quote="Әне, агитатор киятыр екен">Т.Қайыпбергенов</example>
+    </entry>
+
+    <entry word="АҒАЙИН">
+        <type>at.</type>
+        <definition>Туўған-туўысқан, урыўлас, ата-бабалары tuwısqan adamlar.</definition>
+        <example quote="Ағайиниң көп болса адам тиймес, көсеўиң узын болса қолың күймес">кқ.х.н.</example>
+    </entry>
+
+</dictionary>
